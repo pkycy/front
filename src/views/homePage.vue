@@ -139,7 +139,7 @@ export default {
                     },
                     series: [
                         {
-                            name: '订单数量',
+                            name: '部件数量',
                             type: 'pie',
                             radius: '50%',
                             data: [

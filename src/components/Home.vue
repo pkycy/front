@@ -99,15 +99,15 @@
                                 <el-icon>
                                     <list />
                                 </el-icon>
-                                <span>采购/制造管理</span>
+                                <span>采购/制造/销售管理</span>
 
                             </el-menu-item>
-                            <el-menu-item index="/orderPageTwo">
+                            <!-- <el-menu-item index="/orderPageTwo">
                                 <el-icon>
                                     <list />
                                 </el-icon>
                                 <span>销售管理</span>
-                            </el-menu-item>
+                            </el-menu-item> -->
 
                         </el-sub-menu>
                         <!--部件管理-->
@@ -236,7 +236,7 @@ export default {
                     { required: true, message: '请输入密码', trigger: 'blur' }
                 ],
                 phone: [
-                    { required: true, message: '请输入电话号码', trigger: 'blur' },
+                    { required: false, message: '请输入电话号码', trigger: 'blur' },
                     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的电话号码', trigger: 'blur' }
                 ]
             }

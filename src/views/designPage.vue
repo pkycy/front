@@ -24,13 +24,13 @@
 
     <el-table :data="filteredTableData" stripe style="width: 100%">
         <el-table-column prop="id" label="编号" width="200" />
-        <el-table-column prop="blueprint" label="蓝图" width="200">
+        <el-table-column prop="bluePrint[0]?.name || ''" label="蓝图" width="200">
         </el-table-column>
         <el-table-column prop="description" label="说明" width="180" />
         <el-table-column label="操作">
             <template #default="scope">
-                <el-button type="primary" plain :icon="Edit" @click="handleEdit(scope.row)">编辑</el-button>
-                <el-button type="danger" plain :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+                <el-button type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button type="danger" plain @click="handleDelete(scope.row)">删除</el-button>
                 <el-button type="info" plain @click="handleView(scope.row)">查看详情</el-button>
             </template>
         </el-table-column>
@@ -45,14 +45,16 @@
         <el-form :model="form" :rules="rules" ref="editForm" label-width="100px">
             <el-form-item label="蓝图" prop="blueprint">
                 <el-upload class="upload-demo" action="/blueprint/upload" :on-preview="handlePreview"
-                    :on-remove="handleRemove" :before-remove="beforeRemove" multiple :limit="1"
-                    :on-exceed="handleExceed" :file-list="fileList" :auto-upload="false" ref="uploadRef"
-                    :on-success="handleUploadSuccess">
-                    <el-button size="small" type="primary">点击上传</el-button>
-                    <template #tip>
+                    :on-remove="handleRemove" :before-remove="beforeRemove" :limit="1" :on-exceed="handleExceed"
+                    :file-list="fileList" :auto-upload="false" ref="uploadRef" :on-change="handleAddChange">
+                    <el-button type="primary" disabled>点击上传</el-button>
+                    <!-- <template #tip>
                         <div class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
-                    </template>
+                    </template> -->
                 </el-upload>
+                <div v-if="fileToUpload" class="file-preview">
+                    <img :src="filePreviewUrl" alt="Blueprint Preview" style="max-width: 200px; max-height: 200px;">
+                </div>
             </el-form-item>
             <el-form-item label="说明" prop="description">
                 <el-input v-model="form.description" type="textarea" :rows="8"></el-input>
@@ -71,14 +73,18 @@
         <el-form :model="newForm" :rules="newRules" ref="addForm" label-width="100px">
             <el-form-item label="蓝图" prop="blueprint">
                 <el-upload class="upload-demo" action="/blueprint/upload" :on-preview="handlePreview"
-                    :before-upload="beforeUpload" :on-remove="handleRemove" :before-remove="beforeRemove" multiple
-                    :limit="1" :on-exceed="handleExceed" :file-list="newFileList" :auto-upload="false"
-                    ref="addUploadRef" :on-success="handleAddUploadSuccess">
+                    :on-remove="handleAddRemove" :before-remove="handleAddBeforeRemove" :limit="1"
+                    :on-exceed="handleAddExceed" :file-list="newFileList" :auto-upload="false" ref="addUploadRef"
+                    :on-success="handleAddUploadSuccess" :before-upload="handleAddBeforeUpload"
+                    :on-change="handleAddChange">
                     <el-button size="small" type="primary">点击上传</el-button>
                     <template #tip>
                         <div class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
                     </template>
                 </el-upload>
+                <div v-if="fileToUpload" class="file-preview">
+                    <img :src="filePreviewUrl" alt="Blueprint Preview" style="max-width: 200px; max-height: 200px;">
+                </div>
             </el-form-item>
             <el-form-item label="说明" prop="description">
                 <el-input v-model="newForm.description" type="textarea" :rows="8"></el-input>
@@ -104,7 +110,7 @@
                 </div>
             </el-form-item>
             <el-form-item label="说明">
-                <el-input v-model="viewForm.description" type="textarea" disabled :rows="8"></el-input>
+                <el-input v-model="viewForm.blueprintDescription" type="textarea" disabled :rows="8"></el-input>
             </el-form-item>
         </el-form>
         <template #footer>
@@ -118,12 +124,12 @@
 <script setup lang="ts">
 import { ElMessage, ElUpload, ElButton, ElForm, ElFormItem, ElInput, ElDialog, ElMessageBox } from 'element-plus'
 import { ref, computed } from 'vue'
-import { Edit, Delete } from '@element-plus/icons-vue'
+
 import axios from '../utils/axios'
 import type { UploadFile } from 'element-plus';
 import type { UploadFiles } from 'element-plus';
 import type { UploadUserFile } from 'element-plus';
-
+const filePreviewUrl = ref<string>('')
 interface BlueprintResponse {
     code: number;
     msg: string | null;
@@ -138,16 +144,17 @@ interface BlueprintResponse {
 }
 
 interface Blueprint {
-    id: number;
-    blueprint: string;
-    description: string;
+    id: string;
+    bluePrint: {
+        id: string;
+        name: string;
+    }[]
+    ;
+    blueprintDescription: string;
 }
 
-interface FetchId {
-    id: number;
-}
 interface FetchBlueprintParams {
-    id?: number;
+    id?: string;
     page?: number;
     pageSize?: number;
 }
@@ -156,7 +163,7 @@ interface UploadResponse {
     code: number;
     msg: string | null;
     data: {
-        id: number;
+        id: string;
     };
 }
 
@@ -229,10 +236,11 @@ const handleCurrentChange = (val: number) => {
 
 const dialogVisible = ref(false)
 const form = ref({
-    id: 0,
-    blueprint: '',
+    id: '' as string,
+    blueprint: '' as string,
     description: '',
-    bluePrintId: 0
+    bluePrintId: '',
+    fileDeleted: false
 })
 const rules = {
     blueprint: [
@@ -246,55 +254,52 @@ const rules = {
 const handleEdit = (row: Blueprint) => {
     form.value = {
         id: row.id,
-        blueprint: row.blueprint,
-        description: row.description,
-        bluePrintId: 0 // 初始化为0，后续从上传结果获取
+        blueprint: row.bluePrint[0]?.name || '',
+        description: row.blueprintDescription,
+        bluePrintId: row.bluePrint[0]?.id || '',
+        fileDeleted: false
     }
-    fileList.value = [{
-        name: 'blueprint.jpg',
-        url: row.blueprint,
-        uid: Date.now(), // 生成唯一的uid
-        status: 'success' // 设置上传状态为成功
-    }]
     dialogVisible.value = true
 }
-
 const submitForm = async () => {
     if (!editForm.value) return;
 
     editForm.value.validate(async (valid: boolean) => {
         if (valid) {
             try {
-                // 上传文件
-                await uploadFiles('edit');
+                // 处理文件删除
+                if (form.value.fileDeleted) {
+                    await axios.post(`/blueprint/delete/${form.value.id}`)
+                    form.value.bluePrintId = ''; // 重置 bluePrintId
+                }
+
+
 
                 // 更新蓝图信息
                 await axios.post('/blueprint/update', {
+
                     id: form.value.id,
-                    blueprintDescription: form.value.description,
-                    bluePrint: {
-                        id: form.value.bluePrintId,
-                        name: 'blueprint.jpg' // 假设文件名为blueprint.jpg
-                    }
-                })
-                ElMessage.success('修改成功')
-                dialogVisible.value = false
-                handleSearch()
+                    blueprintDescription: form.value.description
+
+                });
+                ElMessage.success('修改成功');
+                dialogVisible.value = false;
+                handleSearch();
             } catch (error) {
-                console.error('修改蓝图失败:', error)
-                ElMessage.error('修改失败')
+                console.error('修改蓝图失败:', error);
+                ElMessage.error('修改失败');
             }
         } else {
-            console.log('表单验证失败')
+            console.log('表单验证失败');
             return;
         }
-    })
+    });
 }
-
 const fileList = ref<UploadFiles>([])
 const uploadRef = ref<InstanceType<typeof ElUpload> | null>(null)
 
 const handleRemove = (file: UploadFile, fileList: UploadFiles) => {
+    form.value.fileDeleted = true;
     console.log(file, fileList)
 }
 
@@ -315,40 +320,6 @@ const beforeRemove = (file: UploadUserFile) => {
             return false; // 取消移除时返回 false
         });
 }
-const beforeUpload = (file) => {
-    // 创建 FormData 对象
-    const formData = new FormData();
-    // 添加文件到 FormData 对象
-    formData.append('file', file);
-    // 添加 bluePrintId 到 FormData 对象
-    formData.append('designBlueprintId', null);
-
-    // 使用 axios 上传文件
-    axios.post('blueprint/upload', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data'
-        }
-    }).then(response => {
-        if (form.value.id) {
-            handleUploadSuccess(response);
-        } else {
-            handleAddUploadSuccess(response);
-        }
-    }).catch(error => {
-        console.error('上传文件失败:', error);
-        ElMessage.error('上传文件失败');
-    });
-
-    // 阻止 Element UI 的自动上传
-    return false;
-};
-
-
-const handleUploadSuccess: (response: UploadResponse, file: UploadFile, fileList: UploadFiles) => void = (response) => {
-    form.value.bluePrintId = response.data.id;
-    editForm.value?.clearValidate(['blueprint']);
-}
-
 const uploadFiles = async (type: 'edit' | 'add') => {
     if (type === 'edit') {
         if (uploadRef.value) {
@@ -368,10 +339,8 @@ const handleDelete = (row: Blueprint) => {
         type: 'warning'
     }).then(async () => {
         try {
-            const params: FetchId = {
-                id: row.id
-            }
-            await axios.post('/blueprint/delete', params)
+
+            await axios.post(`/blueprint/delete?id=${row.id}`)
             ElMessage.success('删除成功')
             handleSearch()
         } catch (error) {
@@ -385,29 +354,41 @@ const handleDelete = (row: Blueprint) => {
 
 const viewDialogVisible = ref(false)
 const viewForm = ref({
-    id: 0,
-    blueprint: '',
-    description: ''
+    id: '' as string,
+    bluePrint: '' as string,
+    blueprintDescription: ''
 })
 
 const handleView = (row: Blueprint) => {
-    viewForm.value = { ...row }
+    viewForm.value = {
+        id: row.id,
+        bluePrint: row.bluePrint[0]?.name || '', // 提取数组中的第一个元素的 name 属性
+        blueprintDescription: row.blueprintDescription
+    }
     viewDialogVisible.value = true
 }
-const downloadBlueprint = (designBlueprintId) => {
-    axios.post('/download', {
-        fileId: fileId,
-        DesignBlueprintId: designBlueprintId
-    }, {
-        responseType: 'blob' // 指示 axios 以二进制blob形式接收响应
+const downloadBlueprint = (designBlueprintId: string) => {
+    // 找到对应的蓝图对象
+    const blueprint = tableData.value.find(item => item.id === designBlueprintId);
+    if (!blueprint) {
+        ElMessage.error('未找到对应的蓝图');
+        return;
+    }
+
+    // 获取蓝图名称
+    const blueprintName = blueprint.bluePrint[0]?.name || 'blueprint.jpg';
+
+    // 发起下载请求
+    axios.get(`/blueprint/download?fileId=${designBlueprintId}`, {
+        responseType: 'blob' // 设置响应类型为 blob
     })
         .then(response => {
             // 创建一个新的 Blob 对象
-            const blob = new Blob([response.data], { type: 'application/octet-stream' });
+            const blob = new Blob([response], { type: 'application/octet-stream' });
             // 创建一个链接并模拟点击以下载文件
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'blueprint.jpg'; // 你可以根据实际情况设置文件名
+            link.download = blueprintName; // 使用蓝图名称作为文件名
             link.click();
             URL.revokeObjectURL(link.href); // 释放URL对象
         })
@@ -421,7 +402,7 @@ const addDialogVisible = ref(false)
 const newForm = ref({
     blueprint: '',
     description: '',
-    bluePrintId: 0
+    bluePrintId: '',
 })
 const newRules = {
     blueprint: [
@@ -434,57 +415,113 @@ const newRules = {
 
 const newFileList = ref<UploadFiles>([])
 const addUploadRef = ref<InstanceType<typeof ElUpload> | null>(null)
-
+const fileToUpload = ref<File | null>(null)
 const handleAdd = () => {
     newForm.value = {
         blueprint: '',
         description: '',
-        bluePrintId: 0
+        bluePrintId: '',
+
     }
-    newFileList.value = []
+    fileToUpload.value = null // 清空文件对象
+
     addDialogVisible.value = true
 }
-
+//el-upload文件上传事件
+const handleAddChange = (file) => {
+    fileToUpload.value = file.raw
+}
 const submitAddForm = async () => {
     if (!addForm.value) return;
 
     addForm.value.validate(async (valid: boolean) => {
         if (valid) {
             try {
-                // 上传文件
-                await uploadFiles('add');
-
-                // 新增蓝图信息
-                await axios.post('/bluprint/insert', {
+                // 1. 发送 blueprintDescription 到 /insert 接口
+                const insertResponse = await axios.post<UploadResponse>('/blueprint/insert', {
                     blueprintDescription: newForm.value.description,
+                });
 
-                })
-                ElMessage.success('新增成功')
-                addDialogVisible.value = false
-                handleSearch()
+
+                if (insertResponse.code === 1) {
+                    const designBlueprintId = insertResponse.data;
+
+                    console.log('designBlueprintId:', designBlueprintId);
+                    console.log('insertResponse:', fileToUpload.value);
+                    // 2. 使用 designBlueprintId 上传文件到 /upload 接口
+                    const formData = new FormData();
+                    //console.log('fileList:', fileList.value[0].raw as File);
+                    // 检查文件是否存在并直接添加文件对象
+                    if (fileToUpload.value) {
+                        console.log('这里没问题fileList:', fileToUpload.value);
+                        formData.append('file', fileToUpload.value); // 直接添加文件对象
+                        console.log('这里有问题fileList:', fileToUpload.value);
+                    } else {
+                        ElMessage.warning('请先选择要上传的文件');
+                        return;
+                    }
+                    formData.append('designBlueprintId', designBlueprintId.toString());
+                    console.log('formData:', formData);
+                    const uploadResponse = await axios.post<UploadResponse>
+                        ('/blueprint/upload', formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        });
+
+                    if (uploadResponse.code === 1) {
+                        ElMessage.success('新增成功');
+                        addDialogVisible.value = false;
+                        handleSearch();
+                    } else {
+                        ElMessage.error('上传文件失败: ' + uploadResponse.msg);
+                    }
+                } else {
+                    ElMessage.error('新增蓝图失败: ' + insertResponse.msg);
+                }
             } catch (error) {
-                console.error('新增蓝图失败:', error)
-                ElMessage.error('新增失败')
+                console.error('新增蓝图失败:', error);
+                ElMessage.error('新增失败');
             }
         } else {
-            console.log('表单验证失败')
+            console.log('表单验证失败');
             return;
         }
     });
-}
+};
 
-const handleAddUploadSuccess: (response: UploadResponse, file: UploadFile, fileList: UploadFiles) => void = (response) => {
+const handleAddUploadSuccess: (response: UploadResponse, file: UploadFile, fileList: UploadFiles) => void = (response, file) => {
     newForm.value.bluePrintId = response.data.id;
     newForm.value.blueprint = response.data.name; // 更新 blueprint 字段
-    newFileList.value = [{ // 更新文件列表
-        name: response.data.name,
-        url: `/blueprint/download/${response.data.id}`, // 假设下载路径
-        uid: Date.now(),
-        status: 'success'
-    }];
+    fileToUpload.value = file.raw as File; // 更新文件对象
     addForm.value?.clearValidate(['blueprint']);
-    addForm.value?.clearValidate('blueprint'); // 清除验证错误
-}
+};
+
+const handleAddRemove = (file: UploadFile) => {
+    console.log('handleAddRemove', file);
+    fileToUpload.value = null; // 清空文件对象
+    newFileList.value = []; // 清空文件列表
+};
+
+
+const handleAddExceed: (files: File[], uploadFiles: UploadUserFile[]) => void = (files, uploadFiles) => {
+    ElMessage.warning(`当前限制选择 1 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + uploadFiles.length} 个文件`);
+};
+
+const handleAddBeforeRemove = (file: UploadUserFile) => {
+    return ElMessageBox.confirm(`确定移除 ${file.name}？`)
+        .then(() => {
+            return true; // 确认移除时返回 true
+        })
+        .catch(() => {
+            return false; // 取消移除时返回 false
+        });
+};
+
+const handleAddBeforeUpload = (file: File) => {
+    fileToUpload.value = file; // 更新文件对象
+    return true; // 允许上传
+};
 
 // 初始化加载蓝图列表
 fetchBlueprints({

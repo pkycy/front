@@ -157,7 +157,7 @@
                     <el-input v-model="viewForm.category" disabled></el-input>
                 </el-form-item>
                 <el-form-item label="具体名称">
-                    <el-input v-model="viewForm.specificName" disabled></el-input>
+                    <el-input v-model="viewForm.name" disabled></el-input>
                 </el-form-item>
                 <el-form-item label="说明">
                     <el-input v-model="viewForm.description" type="textarea" disabled></el-input>
@@ -546,22 +546,22 @@ export default defineComponent({
                 { required: true, message: '请输入说明', trigger: 'blur' }
             ],
             length: [
-                { required: true, message: '请输入长度', trigger: 'change' }
+                { required: false, message: '请输入长度', trigger: 'change' }
             ],
             heightThickness: [
-                { required: true, message: '请输入高度/厚度', trigger: 'change' }
+                { required: false, message: '请输入高度/厚度', trigger: 'change' }
             ],
             size: [
-                { required: true, message: '请输入大小', trigger: 'blur' }
+                { required: false, message: '请输入大小', trigger: 'blur' }
             ],
             weight: [
-                { required: true, message: '请输入重量', trigger: 'change' }
+                { required: false, message: '请输入重量', trigger: 'change' }
             ],
             model: [
-                { required: true, message: '请输入型号', trigger: 'blur' }
+                { required: false, message: '请输入型号', trigger: 'blur' }
             ],
             brand: [
-                { required: true, message: '请输入品牌', trigger: 'blur' }
+                { required: false, message: '请输入品牌', trigger: 'blur' }
             ],
             orderDate: [
                 { required: true, message: '请选择订单日期', trigger: 'change' }
@@ -646,7 +646,7 @@ export default defineComponent({
             id: '' as string,
             partName: '',
             category: '' as string | null,
-            specificName: '',
+            name: '',
             description: '',
             length: null as string | null,
             heightThickness: null as string | null,
@@ -666,7 +666,7 @@ export default defineComponent({
                         id: row.id,
                         partName: row.partName,
                         category: row.cls,
-                        specificName: row.name,
+                        name: row.name,
                         description: row.description,
                         length: '6',
                         heightThickness: '',

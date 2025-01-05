@@ -95,6 +95,34 @@
         </template>
     </el-dialog>
 
+    <!-- 编辑用户对话框 -->
+    <el-dialog v-model="dialogVisible" title="编辑用户" width="60%">
+        <el-form :model="form" :rules="rules" ref="editForm" label-width="100px">
+            <el-form-item label="ID" prop="id">
+                <el-input v-model="form.id" disabled></el-input>
+            </el-form-item>
+            <el-form-item label="姓名" prop="name">
+                <el-input v-model="form.name"></el-input>
+            </el-form-item>
+            <el-form-item label="权限" prop="authority">
+                <el-select v-model="form.authority" placeholder="请选择权限">
+                    <el-option label="普通用户" value="Normal"></el-option>
+                    <el-option label="管理员" value="Admin"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="电话" prop="phone">
+                <el-input v-model="form.phone"></el-input>
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="submitForm">确定</el-button>
+            </span>
+        </template>
+    </el-dialog>
+
+
 
 </template>
 <script lang="ts">
@@ -105,14 +133,14 @@ import type { ComponentSize, FormInstance } from 'element-plus';
 import axios from '../utils/axios'
 
 interface User {
-    id: number;
+    id: string;
     name: string;
     phone: string;
     authority: string;
 }
 
 interface ApiResponse {
-    code: number;
+    code: string;
     msg: string | null;
     data: null;
 }
@@ -166,19 +194,13 @@ export default defineComponent({
 
         const fetchData = async () => {
             try {
-                const params: { id?: number; name?: string; page: number; pageSize: number } = {
+                const params: { id?: string; name?: string; page: number; pageSize: number } = {
                     page: currentPage4.value,
-                    pageSize: pageSize4.value
+                    pageSize: pageSize4.value,
+                    name: ''
                 };
 
-                if (searchQuery.value) {
-                    const id = parseInt(searchQuery.value, 10);
-                    if (!isNaN(id)) {
-                        params.id = id;
-                    } else {
-                        params.name = searchQuery.value;
-                    }
-                }
+
 
                 const response = await axios.post<ApiResponse>('/user/page', params);
                 if (response.code === 1) {
@@ -199,7 +221,7 @@ export default defineComponent({
 
         const dialogVisible = ref(false);
         const form = ref({
-            id: 0,
+            id: '',
             name: '',
             phone: '',
             authority: ''
@@ -229,13 +251,12 @@ export default defineComponent({
             if (!formEl) return;
 
             formEl.validate(async (valid: boolean) => {
-
                 console.log('form', form.value);
 
                 if (valid) {
                     try {
-                        const response = await axios.post<ApiResponse>('/user/updateUser', form.value);
-                        if (response.data.code === 1) {
+                        const response = await axios.post<ApiResponse>('/user/update', form.value); // 修改这里
+                        if (response.code === 1) {
                             ElMessage.success('修改成功');
                             // 更新 tableData 中的数据
                             const index = tableData.value.findIndex(item => item.id === form.value.id);
@@ -270,7 +291,7 @@ export default defineComponent({
                 { required: true, message: '请输入用户名', trigger: 'blur' }
             ],
             phone: [
-                { required: true, message: '请输入电话号码', trigger: 'blur' },
+                { required: false, message: '请输入电话号码', trigger: 'blur' },
                 { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的电话号码', trigger: 'blur' }
             ],
             authority: [
@@ -331,7 +352,7 @@ export default defineComponent({
 
         const viewDialogVisible = ref(false);
         const viewForm = ref<User>({
-            id: 0,
+            id: '',
             name: '',
             phone: '',
             authority: ''
@@ -340,16 +361,16 @@ export default defineComponent({
         const handleView = async (row: User) => {
             try {
                 const response = await axios.get<ApiResponse<UserResponse>>('/user/getById', { params: { id: row.id } });
-                if (response.data.code === 1) {
+                if (response.code === 1) {
                     viewForm.value = {
-                        id: response.data.data.id,
-                        name: response.data.data.name,
-                        phone: response.data.data.phone || '', // 处理可能的 null 值
-                        authority: response.data.data.authority
+                        id: response.data.id,
+                        name: response.data.name,
+                        phone: response.data.phone || '', // 处理可能的 null 值
+                        authority: response.data.authority
                     };
                     viewDialogVisible.value = true;
                 } else {
-                    ElMessage.error('获取用户信息失败: ' + response.data.msg);
+                    ElMessage.error('获取用户信息失败: ' + response.msg);
                 }
             } catch (error) {
                 console.error('获取用户信息失败:', error);
