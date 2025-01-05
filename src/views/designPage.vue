@@ -455,12 +455,9 @@ const submitAddForm = async () => {
                 await uploadFiles('add');
 
                 // 新增蓝图信息
-                await axios.post('/insert', {
+                await axios.post('/bluprint/insert', {
                     blueprintDescription: newForm.value.description,
-                    bluePrint: {
-                        id: newForm.value.bluePrintId,
-                        name: 'blueprint.jpg' // 假设文件名为blueprint.jpg
-                    }
+
                 })
                 ElMessage.success('新增成功')
                 addDialogVisible.value = false

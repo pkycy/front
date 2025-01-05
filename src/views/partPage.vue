@@ -200,11 +200,11 @@ const editFormRef = ref<InstanceType<typeof ElForm> | null>(null);
 interface ApiResponse<T> {
     code: number;
     msg: string | null;
-    data: T | null;
+    data: T | null | [T];
 }
 
 interface Part {
-    id: number;
+    id: string;
     name: string;
     description: string;
     partName: string;
@@ -229,7 +229,7 @@ interface PartPageResponse {
 }
 
 interface ClsDef {
-    id: number;
+    id: string;
     name: string;
     description: string;
     attrDefs: {
@@ -308,8 +308,9 @@ export default defineComponent({
         const fetchClsDefs = async () => {
             try {
                 const response = await axios.get<ApiResponse<ClsDef[]>>('/part/listClsDefs');
-                if (response.data.code === 1) {
-                    clsDefs.value = response.data.data;
+                if (response.code === 1) {
+
+                    ElMessage.success('获取分类定义成功');
                 } else {
                     ElMessage.error('获取分类定义失败: ' + (response.data.msg || '未知错误'));
                 }
@@ -352,7 +353,7 @@ export default defineComponent({
 
         const addDialogVisible = ref(false)
         const newForm = ref({
-            id: 0 as number,
+            id: '' as string,
             name: '' as string,
             partName: '' as string,
             Cls: '' as string,
@@ -407,9 +408,9 @@ export default defineComponent({
         }
 
         const handleAdd = () => {
-            const randomId = Math.floor(Math.random() * 1000);
+
             newForm.value = {
-                id: randomId,
+                id: '' as string,
                 partName: '',
                 Cls: '',
                 name: '',
@@ -514,7 +515,7 @@ export default defineComponent({
         }
         const editDialogVisible = ref(false)
         const editForm = ref({
-            id: 0,
+            id: '' as string,
             partName: '',
             category: '',
             specificName: '',
@@ -642,7 +643,7 @@ export default defineComponent({
 
         const viewDialogVisible = ref(false)
         const viewForm = ref({
-            id: 0,
+            id: '' as string,
             partName: '',
             category: '' as string | null,
             specificName: '',
@@ -675,6 +676,7 @@ export default defineComponent({
                         brand: 'jfjs',
 
                     }
+                    console.log('只执行到这里')
                     if (part.attrDefs) {
                         console.log('执行到只一会')
                         part.attrDefs.forEach(attr => {

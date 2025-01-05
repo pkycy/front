@@ -136,7 +136,7 @@ interface FetchProductsParams {
     page: number;
     pageSize: number;
     name?: string;
-    id?: number;
+    id?: string;
 }
 interface ApiResponse<T> {
     code: number;
@@ -145,7 +145,7 @@ interface ApiResponse<T> {
 }
 
 interface Product {
-    id: number;
+    id: string;
     productOwner: string;
     productInformation: string;
     productName: string;
@@ -172,7 +172,7 @@ export default defineComponent({
         const editFormRef = ref<InstanceType<typeof ElForm> | null>(null);
 
         const editForm = ref<Product>({
-            id: 0,
+            id: '' as string,
             productOwner: '',
             productInformation: '',
             productName: '',
@@ -204,7 +204,7 @@ export default defineComponent({
                     page: currentPage.value,
                     pageSize: pageSize.value,
                     name: orderNameQuery.value,
-                    id: orderCodeQuery.value ? parseInt(orderCodeQuery.value, 10) : undefined
+                    id: orderCodeQuery.value
                 };
 
                 const response = await axios.post<ApiResponse<ProductPageResponse>>('/product/page', params);
@@ -404,7 +404,7 @@ export default defineComponent({
         };
         const viewDialogVisible = ref(false)
         const viewForm = ref({
-            id: 0,
+            id: '' as string,
             productOwner: '',
             productInformation: '',
             productName: '',

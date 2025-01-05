@@ -136,10 +136,9 @@
     </div>
 </template>
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, ElForm } from 'element-plus'
 import axios from '../utils/axios'
-
 
 interface OrderResponse {
     data: {
@@ -149,10 +148,10 @@ interface OrderResponse {
 }
 
 interface Order {
-    id: number;
+    id: string;
     name: string;
     type: string;
-    quantity: number;
+    quantity: string;
     orderDate: string | Date;
 }
 
@@ -160,7 +159,7 @@ interface FetchOrdersParams {
     page?: number;
     pageSize?: number;
     name?: string;
-    id?: number;
+    id?: string;
     type?: string;
 }
 
@@ -181,8 +180,6 @@ export default defineComponent({
 
         const addFormRef = ref<InstanceType<typeof ElForm> | null>(null);
         const editFormRef = ref<InstanceType<typeof ElForm> | null>(null);
-
-
 
         const filteredTableData = computed(() => {
             let filteredData = tableData.value
@@ -207,19 +204,21 @@ export default defineComponent({
 
             return filteredData
         })
-        const fetchOrders = async () => {
-            try {
-                const params: FetchOrdersParams = {
-                    name: orderNameQuery.value,
-                    page: currentPage.value,
-                    pageSize: pageSize.value,
-                    id: orderCodeQuery.value ? parseInt(orderCodeQuery.value, 10) : undefined,
-                    //type: orderSource.value !== 'all' ? orderSource.value : undefined
-                };
 
+        const fetchOrders = async (params: FetchOrdersParams) => {
+            try {
                 const response: OrderResponse = await axios.post('/order/page', params)
-                tableData.value = response.data.records
-                totalOrders.value = response.data.total
+                console.log('获取订单列表响应:', response); // 添加调试信息
+                if (response.data && response.data.records) {
+                    tableData.value = response.data.records
+                    totalOrders.value = response.data.total
+                    console.log('获取订单列表成功res:', response.data.records);
+                    console.log('获取订单列表成功:', tableData.value);
+                    ElMessage.success('获取订单列表成功')
+                } else {
+                    console.error('响应格式不正确:', response);
+                    ElMessage.error('获取订单列表失败');
+                }
             } catch (error) {
                 console.error('获取订单列表失败:', error)
                 ElMessage.error('获取订单列表失败')
@@ -227,19 +226,25 @@ export default defineComponent({
         }
 
         const handleSearch = () => {
-
-            fetchOrders();
+            const params: FetchOrdersParams = {
+                page: currentPage.value,
+                pageSize: pageSize.value,
+                //name: orderNameQuery.value,
+                //id: orderCodeQuery.value,
+                //type: orderSource.value
+            }
+            fetchOrders(params);
         }
 
         const handleReset = () => {
             orderCodeQuery.value = ''
             orderNameQuery.value = ''
             orderSource.value = 'all'
+            currentPage.value = 1; // 重置到第一页
             handleSearch()
         }
 
         const handleSizeChange = (val: number) => {
-
             pageSize.value = val;
             handleSearch();
         }
@@ -287,9 +292,7 @@ export default defineComponent({
             addFormRef.value.validate(async (valid: boolean) => {
                 if (valid) {
                     try {
-
                         const orderDate = new Date(newForm.value.orderDate).getTime();
-
                         await axios.post('/order/insert', {
                             name: newForm.value.name,
                             quantity: newForm.value.quantity,
@@ -312,10 +315,10 @@ export default defineComponent({
 
         const editDialogVisible = ref(false)
         const editForm = ref({
-            id: 11 as number,
+            id: '' as string,
             name: '' as string,
-            source: '' as string,
-            quantity: 0 as number,
+            type: '' as string,
+            quantity: '' as string,
             orderDate: '' as string | Date
         })
         const editRules = {
@@ -344,15 +347,13 @@ export default defineComponent({
             editFormRef.value.validate(async (valid: boolean) => {
                 if (valid) {
                     try {
-
-                        // 确保 orderDate 是一个 Date 对象
                         const orderDate = new Date(editForm.value.orderDate).getTime();
                         await axios.post('/order/update', {
                             id: editForm.value.id,
                             name: editForm.value.name,
                             quantity: editForm.value.quantity,
                             orderDate: orderDate,
-                            type: editForm.value.source
+                            type: editForm.value.type
                         })
                         ElMessage.success('修改成功')
                         editDialogVisible.value = false
@@ -367,6 +368,7 @@ export default defineComponent({
                 }
             })
         }
+
         const handleDelete = (row: Order) => {
             ElMessageBox.confirm('确定删除该订单?', '提示', {
                 confirmButtonText: '确定',
@@ -377,28 +379,18 @@ export default defineComponent({
                     const response = await axios.post(`/order/delete?id=${row.id}`);
                     if (response.code === 1) {
                         ElMessage.success('删除成功');
-
-                        // 从 tableData 中移除对应的订单数据
                         const index = tableData.value.findIndex(item => item.id === row.id);
                         if (index !== -1) {
                             tableData.value.splice(index, 1);
                         }
-
-                        // 更新 totalOrders
                         totalOrders.value -= 1;
-
-                        // 如果当前页没有数据且不是第一页，则跳转到上一页
                         if (filteredTableData.value.length === 0 && currentPage.value > 1) {
                             currentPage.value -= 1;
                         }
-
-                        // 重新加载数据
                         handleSearch();
-
                     } else {
                         ElMessage.error('删除失败: ' + (response.msg || '未知错误'));
                     }
-
                 } catch (error) {
                     console.error('删除订单失败:', error);
                     ElMessage.error('删除失败');
@@ -410,10 +402,10 @@ export default defineComponent({
 
         const viewDialogVisible = ref(false)
         const viewForm = ref({
-            id: 0 as number,
+            id: '' as string,
             name: '' as string,
             source: '' as string,
-            quantity: 0 as number,
+            quantity: '' as string,
             orderDate: '' as string | Date,
         })
 
@@ -426,7 +418,7 @@ export default defineComponent({
                         name: order.name,
                         source: order.type,
                         quantity: order.quantity,
-                        orderDate: new Date(order.orderDate) // 将时间戳转换为Date对象
+                        orderDate: new Date(order.orderDate).toUTCString() // 将时间戳转换为UTC字符串
                     };
                     viewDialogVisible.value = true;
                 } else {
@@ -438,10 +430,8 @@ export default defineComponent({
             }
         };
 
-        // 初始化加载订单列表
-        fetchOrders({
-            page: currentPage.value,
-            pageSize: pageSize.value
+        onMounted(() => {
+            handleSearch();
         })
 
         return {
@@ -480,8 +470,3 @@ export default defineComponent({
     }
 })
 </script>
-<style lang="less" scoped>
-.input-with-select .el-input-group__prepend {
-    background-color: var(--el-fill-color-blank);
-}
-</style>

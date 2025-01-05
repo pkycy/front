@@ -135,7 +135,7 @@ interface OrderResponse {
 }
 
 interface Order {
-    id: number;
+    id: string;
     name: string;
     source: string;
     quantity: number;
@@ -146,7 +146,7 @@ interface FetchOrdersParams {
     page?: number;
     pageSize?: number;
     name?: string;
-    id?: number;
+    id?: string;
     type?: string;
 }
 
@@ -305,7 +305,7 @@ export default defineComponent({
 
         const editDialogVisible = ref(false)
         const editForm = ref({
-            id: 0,
+            id: '' as string,
             name: '',
             source: '',
             quantity: null as number | null,
@@ -381,7 +381,7 @@ export default defineComponent({
 
         const viewDialogVisible = ref(false)
         const viewForm = ref({
-            id: 0,
+            id: '' as string,
             name: '',
             source: '',
             quantity: null as number | null,
