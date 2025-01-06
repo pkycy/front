@@ -24,9 +24,9 @@
 
     <el-table :data="filteredTableData" stripe style="width: 100%">
         <el-table-column prop="id" label="编号" width="200" />
-        <el-table-column prop="bluePrint[0]?.name || ''" label="蓝图" width="200">
+        <el-table-column prop="bluePrint[0].name" label="蓝图" width="200">
         </el-table-column>
-        <el-table-column prop="description" label="说明" width="180" />
+        <el-table-column prop="blueprintDescription" label="说明" width="180" />
         <el-table-column label="操作">
             <template #default="scope">
                 <el-button type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
@@ -179,6 +179,7 @@ const totalOrders = ref(0)
 const fetchBlueprints = async (params: FetchBlueprintParams) => {
     try {
         const response = await axios.post<BlueprintResponse>('/blueprint/page', params);
+
         tableData.value = response.data.records;
         totalOrders.value = response.data.total;
     } catch (error) {
