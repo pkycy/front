@@ -23,11 +23,11 @@
         </el-row>
 
         <el-table :data="filteredTableData" stripe style="width: 100%">
-            <el-table-column prop="id" label="编号" width="150" />
-            <el-table-column prop="productName" label="名称" width="100" />
-            <el-table-column prop="productInformation" label="基本信息" width="150" />
+            <el-table-column prop="id" label="编号" width="180" />
+            <el-table-column prop="productName" label="名称" width="180" />
+            <el-table-column prop="productInformation" label="基本信息" width="180" />
             <el-table-column prop="productOwner" label="负责人" width="100" />
-            <el-table-column prop="productStage" label="产品阶段" width="100" />
+            <el-table-column prop="productStage" label="产品阶段" width="150" />
             <el-table-column label="操作">
                 <template #default="scope">
                     <el-button type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>

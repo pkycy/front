@@ -148,7 +148,7 @@ interface Blueprint {
     bluePrint: {
         id: string;
         name: string;
-    }[]
+    }[] | null
     ;
     blueprintDescription: string;
 }

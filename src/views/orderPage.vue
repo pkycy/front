@@ -31,11 +31,11 @@
         </el-row>
 
         <el-table :data="filteredTableData" stripe style="width: 100%">
-            <el-table-column prop="id" label="编号" width="150" />
-            <el-table-column prop="name" label="名称" width="100" />
+            <el-table-column prop="id" label="编号" width="180" />
+            <el-table-column prop="name" label="名称" width="180" />
             <el-table-column prop="quantity" label="数量" width="100" />
-            <el-table-column prop="type" label="来源" width="100" />
-            <el-table-column prop="orderDate" label="订单日期（UTC）" width="180">
+            <el-table-column prop="type" label="来源" width="150" />
+            <el-table-column prop="orderDate" label="订单日期（UTC）" width="250">
                 <template #default="scope">
                     {{ new Date(scope.row.orderDate).toUTCString() }}
                 </template>

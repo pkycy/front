@@ -26,7 +26,7 @@
 
     <el-table :data="filteredTableData" stripe style="width: 100%">
 
-        <el-table-column prop="date" label="注册日期" width="180" />
+        <!--  <el-table-column prop="date" label="注册日期" width="180" /> -->
         <el-table-column prop="name" label="用户名" width="180" />
         <el-table-column prop="phone" label="电话号码" width="180" />
         <el-table-column prop="authority" label="权限" width="200" />

@@ -21,15 +21,15 @@
         </el-row>
 
         <el-table :data="filteredTableData" stripe style="width: 100%">
-            <el-table-column prop="id" label="编号" width="150" />
-            <el-table-column prop="partName" label="部件名称" width="100" />
-            <el-table-column prop="name" label="具体名称" width="100" />
-            <el-table-column prop="description" label="说明" width="150" />
-            <el-table-column prop="orderDate" label="订单日期（UTC）" width="100">
+            <el-table-column prop="id" label="编号" width="180" />
+            <el-table-column prop="partName" label="部件名称" width="180" />
+            <el-table-column prop="name" label="具体名称" width="180" />
+            <el-table-column prop="description" label="说明" width="180" />
+            <!-- <el-table-column prop="orderDate" label="订单日期（UTC）" width="100">
                 <template #default="scope">
                     {{ new Date(scope.row.orderDate).toUTCString() }}
                 </template>
-            </el-table-column>
+</el-table-column> -->
             <el-table-column label="操作">
                 <template #default="scope">
                     <el-button type="primary" plain @click="handleEdit(scope.row)">编辑</el-button>
