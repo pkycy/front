@@ -104,7 +104,7 @@
             <el-form-item label="编号">
                 <el-input v-model="viewForm.id" disabled></el-input>
             </el-form-item>
-            <el-form-item label="蓝图">
+            <el-form-item label="蓝图" v-if="viewForm.bluePrint">
                 <div style="display: flex; align-items: center;">
                     <el-button type="primary" plain @click="downloadBlueprint(viewForm.id)">下载</el-button>
                 </div>
@@ -363,7 +363,7 @@ const viewForm = ref({
 const handleView = (row: Blueprint) => {
     viewForm.value = {
         id: row.id,
-        bluePrint: row.bluePrint[0]?.name || '', // 提取数组中的第一个元素的 name 属性
+        bluePrint: row.bluePrint===null?'' : row.bluePrint[0]?.name, // 提取数组中的第一个元素的 name 属性
         blueprintDescription: row.blueprintDescription
     }
     viewDialogVisible.value = true
