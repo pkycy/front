@@ -186,7 +186,7 @@ export default defineComponent({
 
             if (orderCodeQuery.value) {
                 filteredData = filteredData.filter(item =>
-                    item.id.toString().includes(orderCodeQuery.value)
+                    item.id.includes(orderCodeQuery.value)
                 )
             }
 
@@ -229,9 +229,9 @@ export default defineComponent({
             const params: FetchOrdersParams = {
                 page: currentPage.value,
                 pageSize: pageSize.value,
-                //name: orderNameQuery.value,
-                //id: orderCodeQuery.value,
-                //type: orderSource.value
+                name: orderNameQuery.value,
+                id: orderCodeQuery.value,
+                type: orderSource.value
             }
             fetchOrders(params);
         }

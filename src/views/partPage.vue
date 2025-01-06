@@ -476,9 +476,9 @@ export default defineComponent({
                     try {
                         const response = await axios.post<ApiResponse<Part>>('/part/update', {
                             id: editForm.value.id,
-                            name: editForm.value.partName,
+                            partName: editForm.value.partName,
                             description: editForm.value.description,
-                            partName: editForm.value.specificName,
+                            name: editForm.value.specificName,
                             cls: editForm.value.category,
                             attrs: [
                                 { key: '品牌', value: editForm.value.brand },
